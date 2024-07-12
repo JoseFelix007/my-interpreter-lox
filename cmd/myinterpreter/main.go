@@ -14,7 +14,9 @@ func getLexemes() map[byte]string {
 		'*': "STAR",
 		'.': "DOT",
 		',': "COMMA",
+		';': "SEMICOLON",
 		'+': "PLUS",
+		'-': "MINUS",
 	}
 }
 
