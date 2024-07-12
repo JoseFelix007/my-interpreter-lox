@@ -54,10 +54,10 @@ func main() {
 			for _, chr := range line {
 				lexeme, ok := lexemes[chr]
 				if ok {
-					fmt.Fprintf(os.Stderr, "%s %c null\n", lexeme, rune(chr))
+					fmt.Printf("%s %c null\n", lexeme, rune(chr))
 				} else {
 					errors = true
-					fmt.Printf("[line %d] Error: Unexpected character: %c\n", lineNumber+1, rune(chr))
+					fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", lineNumber+1, rune(chr))
 				}
 			}
 		}
