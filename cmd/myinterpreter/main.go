@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
-func getLexemes() map[byte]string {
-	return map[byte]string{
+func getLexemes() map[rune]string {
+	return map[rune]string{
 		'(': "LEFT_PAREN",
 		')': "RIGHT_PAREN",
 		'{': "LEFT_BRACE",
@@ -47,12 +48,15 @@ func main() {
 
 	if len(fileContents) > 0 {
 		lexemes := getLexemes()
-		for _, chr := range fileContents {
-			lexeme, ok := lexemes[chr]
-			if ok {
-				fmt.Printf("%s %c null\n", lexeme, rune(chr))
-			} else {
-				fmt.Println("Unexpected character.")
+		lines := strings.Split(string(fileContents), "\n")
+		for lineNumber, line := range lines {
+			for _, chr := range line {
+				lexeme, ok := lexemes[chr]
+				if ok {
+					fmt.Fprintf(os.Stderr, "%s %c null\n", lexeme, rune(chr))
+				} else {
+					fmt.Printf("[line %d] Error: Unexpected character: %c\n", lineNumber+1, rune(chr))
+				}
 			}
 		}
 	}
