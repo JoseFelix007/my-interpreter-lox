@@ -11,6 +11,10 @@ func getLexemes() map[byte]string {
 		')': "RIGHT_PAREN",
 		'{': "LEFT_BRACE",
 		'}': "RIGHT_BRACE",
+		'*': "STAR",
+		'.': "DOT",
+		',': "COMMA",
+		'+': "PLUS",
 	}
 }
 
