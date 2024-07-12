@@ -46,6 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	errors := false
 	if len(fileContents) > 0 {
 		lexemes := getLexemes()
 		lines := strings.Split(string(fileContents), "\n")
@@ -55,11 +56,16 @@ func main() {
 				if ok {
 					fmt.Fprintf(os.Stderr, "%s %c null\n", lexeme, rune(chr))
 				} else {
+					errors = true
 					fmt.Printf("[line %d] Error: Unexpected character: %c\n", lineNumber+1, rune(chr))
 				}
 			}
 		}
 	}
 
-	fmt.Println("EOF  null") // Placeholder, remove this line when implementing the scanner
+	fmt.Println("EOF  null")
+
+	if errors {
+		os.Exit(65)
+	}
 }
