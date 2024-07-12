@@ -5,10 +5,14 @@ import (
 	"os"
 )
 
-const (
-	LEFT_PAREN  byte = '('
-	RIGHT_PAREN byte = ')'
-)
+func getLexemes() map[byte]string {
+	return map[byte]string{
+		'(': "LEFT_PAREN",
+		')': "RIGHT_PAREN",
+		'{': "LEFT_BRACE",
+		'}': "RIGHT_BRACE",
+	}
+}
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -36,14 +40,13 @@ func main() {
 	}
 
 	if len(fileContents) > 0 {
+		lexemes := getLexemes()
 		for _, chr := range fileContents {
-			switch chr {
-			case LEFT_PAREN:
-				fmt.Println("LEFT_PAREN ( null")
-			case RIGHT_PAREN:
-				fmt.Println("RIGHT_PAREN ) null")
-			default:
-				fmt.Println("Unknown")
+			lexeme, ok := lexemes[chr]
+			if ok {
+				fmt.Printf("%s %c null\n", lexeme, rune(chr))
+			} else {
+				fmt.Println("Unexpected character.")
 			}
 		}
 	}
