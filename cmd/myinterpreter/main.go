@@ -5,6 +5,11 @@ import (
 	"os"
 )
 
+const (
+	LEFT_PAREN  byte = '('
+	RIGHT_PAREN byte = ')'
+)
+
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
@@ -31,8 +36,17 @@ func main() {
 	}
 
 	if len(fileContents) > 0 {
-		panic("Scanner not implemented")
-	} else {
-		fmt.Println("EOF  null") // Placeholder, remove this line when implementing the scanner
+		for _, chr := range fileContents {
+			switch chr {
+			case LEFT_PAREN:
+				fmt.Println("LEFT_PAREN ( null")
+			case RIGHT_PAREN:
+				fmt.Println("RIGHT_PAREN ) null")
+			default:
+				fmt.Println("Unknown")
+			}
+		}
 	}
+
+	fmt.Println("EOF  null") // Placeholder, remove this line when implementing the scanner
 }
