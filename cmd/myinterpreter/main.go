@@ -6,18 +6,38 @@ import (
 	"strings"
 )
 
-func getLexemes() map[rune]string {
-	return map[rune]string{
-		'(': "LEFT_PAREN",
-		')': "RIGHT_PAREN",
-		'{': "LEFT_BRACE",
-		'}': "RIGHT_BRACE",
-		'*': "STAR",
-		'.': "DOT",
-		',': "COMMA",
-		';': "SEMICOLON",
-		'+': "PLUS",
-		'-': "MINUS",
+type State int
+type Transition struct {
+	Lexema string
+	State  State
+}
+
+const (
+	NORMAL State = iota
+	WAITING
+)
+
+func getTransitions() map[State]map[rune]Transition {
+	return map[State]map[rune]Transition{
+		NORMAL: {
+			'(': {"LEFT_PAREN", NORMAL},
+			')': {"RIGHT_PAREN", NORMAL},
+			'{': {"LEFT_BRACE", NORMAL},
+			'}': {"RIGHT_BRACE", NORMAL},
+			'*': {"STAR", NORMAL},
+			'.': {"DOT", NORMAL},
+			',': {"COMMA", NORMAL},
+			';': {"SEMICOLON", NORMAL},
+			'+': {"PLUS", NORMAL},
+			'-': {"MINUS", NORMAL},
+			'=': {"EQUAL", WAITING},
+			'<': {"LESS", WAITING},
+			'>': {"GREATER", WAITING},
+			'!': {"BANG", WAITING},
+		},
+		WAITING: {
+			'=': {"EQUAL", NORMAL},
+		},
 	}
 }
 
@@ -48,16 +68,42 @@ func main() {
 
 	errors := false
 	if len(fileContents) > 0 {
-		lexemes := getLexemes()
+		transitions := getTransitions()
 		lines := strings.Split(string(fileContents), "\n")
 		for lineNumber, line := range lines {
-			for _, chr := range line {
-				lexeme, ok := lexemes[chr]
-				if ok {
-					fmt.Printf("%s %c null\n", lexeme, rune(chr))
-				} else {
+			state := NORMAL
+			last_transition := Transition{"", NORMAL}
+			last_chr := rune(0)
+			for _, curr_chr := range line {
+				transition, ok := transitions[state][curr_chr]
+				if !ok && state == WAITING {
+					fmt.Printf("%s %c null\n", last_transition.Lexema, last_chr)
+					last_transition = Transition{"", NORMAL}
+					last_chr = rune(0)
+					transition, ok = transitions[NORMAL][curr_chr]
+				}
+
+				if !ok {
 					errors = true
-					fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", lineNumber+1, rune(chr))
+					fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", lineNumber+1, rune(curr_chr))
+					continue
+				}
+
+				state = transition.State
+				if state == WAITING {
+					last_chr = curr_chr
+					last_transition = transition
+					continue
+				}
+
+				if state == NORMAL {
+					chr := string(last_chr) + string(curr_chr)
+					lexema := ""
+					if last_transition.Lexema != "" {
+						lexema = last_transition.Lexema + "_"
+					}
+					lexema = lexema + transition.Lexema
+					fmt.Printf("%s %s null\n", lexema, chr)
 				}
 			}
 		}
