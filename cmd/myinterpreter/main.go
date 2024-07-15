@@ -80,6 +80,7 @@ func main() {
 					fmt.Printf("%s %c null\n", last_transition.Lexema, last_chr)
 					last_transition = Transition{"", NORMAL}
 					last_chr = rune(0)
+					state = NORMAL
 					transition, ok = transitions[NORMAL][curr_chr]
 				}
 
@@ -110,6 +111,7 @@ func main() {
 					}
 					lexema = lexema + transition.Lexema
 					fmt.Printf("%s %s null\n", lexema, chr)
+					last_transition = Transition{"", NORMAL}
 				}
 			}
 			if last_transition.Lexema != "" {
