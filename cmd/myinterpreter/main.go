@@ -16,27 +16,30 @@ const (
 	NORMAL State = iota
 	WAITING
 	WAITING_COMMENT
+	IGNORE
 	BREAK
 )
 
 func getTransitions() map[State]map[rune]Transition {
 	return map[State]map[rune]Transition{
 		NORMAL: {
-			'(': {"LEFT_PAREN", NORMAL},
-			')': {"RIGHT_PAREN", NORMAL},
-			'{': {"LEFT_BRACE", NORMAL},
-			'}': {"RIGHT_BRACE", NORMAL},
-			'*': {"STAR", NORMAL},
-			'.': {"DOT", NORMAL},
-			',': {"COMMA", NORMAL},
-			';': {"SEMICOLON", NORMAL},
-			'+': {"PLUS", NORMAL},
-			'-': {"MINUS", NORMAL},
-			'=': {"EQUAL", WAITING},
-			'<': {"LESS", WAITING},
-			'>': {"GREATER", WAITING},
-			'!': {"BANG", WAITING},
-			'/': {"SLASH", WAITING_COMMENT},
+			'(':  {"LEFT_PAREN", NORMAL},
+			')':  {"RIGHT_PAREN", NORMAL},
+			'{':  {"LEFT_BRACE", NORMAL},
+			'}':  {"RIGHT_BRACE", NORMAL},
+			'*':  {"STAR", NORMAL},
+			'.':  {"DOT", NORMAL},
+			',':  {"COMMA", NORMAL},
+			';':  {"SEMICOLON", NORMAL},
+			'+':  {"PLUS", NORMAL},
+			'-':  {"MINUS", NORMAL},
+			'=':  {"EQUAL", WAITING},
+			'<':  {"LESS", WAITING},
+			'>':  {"GREATER", WAITING},
+			'!':  {"BANG", WAITING},
+			'/':  {"SLASH", WAITING_COMMENT},
+			' ':  {"SPACE", IGNORE},
+			'\t': {"TAB", IGNORE},
 		},
 		WAITING: {
 			'=': {"EQUAL", NORMAL},
@@ -105,6 +108,13 @@ func main() {
 					last_chr = rune(0)
 					state = NORMAL
 					break
+				}
+
+				if state == IGNORE {
+					last_transition = Transition{"", NORMAL}
+					last_chr = rune(0)
+					state = NORMAL
+					continue
 				}
 
 				if state != NORMAL {
