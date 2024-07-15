@@ -89,6 +89,7 @@ func main() {
 			last_transition := Transition{"", NORMAL}
 			last_chr := rune(0)
 			literal := ""
+			args := "null"
 			for _, curr_chr := range line {
 				transition, ok := transitions[state][curr_chr]
 				if !ok && state == WAITING_STRING {
@@ -145,14 +146,16 @@ func main() {
 					}
 					if literal != "" {
 						lexema = ""
-						chr = literal
+						chr = "\"" + literal + "\""
+						args = literal
 					}
 					lexema = lexema + transition.Lexema
-					fmt.Printf("%s %s null\n", lexema, chr)
+					fmt.Printf("%s %s %s\n", lexema, chr, args)
 					last_transition = Transition{"", NORMAL}
 					last_chr = rune(0)
 					state = NORMAL
 					literal = ""
+					args = "null"
 				}
 			}
 			if literal != "" {
