@@ -15,6 +15,8 @@ type Transition struct {
 const (
 	NORMAL State = iota
 	WAITING
+	WAITING_COMMENT
+	BREAK
 )
 
 func getTransitions() map[State]map[rune]Transition {
@@ -34,9 +36,13 @@ func getTransitions() map[State]map[rune]Transition {
 			'<': {"LESS", WAITING},
 			'>': {"GREATER", WAITING},
 			'!': {"BANG", WAITING},
+			'/': {"SLASH", WAITING_COMMENT},
 		},
 		WAITING: {
 			'=': {"EQUAL", NORMAL},
+		},
+		WAITING_COMMENT: {
+			'/': {"COMMENT", BREAK},
 		},
 	}
 }
@@ -76,7 +82,7 @@ func main() {
 			last_chr := rune(0)
 			for _, curr_chr := range line {
 				transition, ok := transitions[state][curr_chr]
-				if !ok && state == WAITING {
+				if !ok && state != NORMAL {
 					fmt.Printf("%s %c null\n", last_transition.Lexema, last_chr)
 					last_transition = Transition{"", NORMAL}
 					last_chr = rune(0)
@@ -94,7 +100,14 @@ func main() {
 				}
 
 				state = transition.State
-				if state == WAITING {
+				if state == BREAK {
+					last_transition = Transition{"", NORMAL}
+					last_chr = rune(0)
+					state = NORMAL
+					break
+				}
+
+				if state != NORMAL {
 					last_chr = curr_chr
 					last_transition = transition
 					continue
