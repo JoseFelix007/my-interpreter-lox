@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 )
 
 type State int
@@ -17,12 +18,13 @@ const (
 	WAITING_EQUAL
 	WAITING_COMMENT
 	WAITING_STRING
+	WAITING_NUMBER
 	IGNORE
 	BREAK
 )
 
 func getTransitions() map[State]map[rune]Transition {
-	return map[State]map[rune]Transition{
+	transitions := map[State]map[rune]Transition{
 		NORMAL: {
 			'(':  {"LEFT_PAREN", NORMAL},
 			')':  {"RIGHT_PAREN", NORMAL},
@@ -52,7 +54,17 @@ func getTransitions() map[State]map[rune]Transition {
 		WAITING_STRING: {
 			'"': {"STRING", NORMAL},
 		},
+		WAITING_NUMBER: {
+			'.': {"DOT", WAITING_NUMBER},
+		},
 	}
+
+	for i := '0'; i <= '9'; i++ {
+		transitions[NORMAL][i] = Transition{"NUMBER", WAITING_NUMBER}
+		transitions[WAITING_NUMBER][i] = Transition{"NUMBER", WAITING_NUMBER}
+	}
+
+	return transitions
 }
 
 func main() {
@@ -97,6 +109,30 @@ func main() {
 					continue
 				}
 
+				if state == WAITING_NUMBER {
+					if unicode.IsDigit(curr_chr) || curr_chr == '.' {
+						literal += string(curr_chr)
+						continue
+					}
+					if literal != "" {
+						if strings.Count(literal, ".") > 1 {
+							errors = true
+							fmt.Fprintf(os.Stderr, "[line %d] Error: Invalid number format: %s\n", lineNumber+1, literal)
+						} else {
+							// number, err := strconv.ParseFloat(literal, 64)
+							// if err != nil {
+							// 	fmt.Fprintf(os.Stderr, "[line %d] Error: Invalid number\n", lineNumber+1)
+							// }
+							fmt.Printf("NUMBER %s %s\n", literal, literal)
+						}
+						last_transition = Transition{"", NORMAL}
+						last_chr = rune(0)
+						state = NORMAL
+						literal = ""
+					}
+					transition, ok = transitions[NORMAL][curr_chr]
+				}
+
 				if !ok && state != NORMAL {
 					fmt.Printf("%s %c null\n", last_transition.Lexema, last_chr)
 					last_transition = Transition{"", NORMAL}
@@ -129,6 +165,13 @@ func main() {
 					continue
 				}
 
+				if state == WAITING_NUMBER {
+					if unicode.IsDigit(curr_chr) || curr_chr == '.' {
+						literal += string(curr_chr)
+						continue
+					}
+				}
+
 				if state != NORMAL {
 					last_chr = curr_chr
 					last_transition = transition
@@ -159,6 +202,19 @@ func main() {
 				}
 			}
 			if literal != "" {
+				if state == WAITING_NUMBER {
+					if strings.Count(literal, ".") > 1 {
+						errors = true
+						fmt.Fprintf(os.Stderr, "[line %d] Error: Invalid number format: %s\n", lineNumber+1, literal)
+					} else {
+						// number, err := strconv.ParseFloat(literal, 64)
+						// if err != nil {
+						// 	fmt.Fprintf(os.Stderr, "[line %d] Error: Invalid number\n", lineNumber+1)
+						// }
+						fmt.Printf("NUMBER %s %s\n", literal, literal)
+					}
+					continue
+				}
 				errors = true
 				fmt.Fprintf(os.Stderr, "[line %d] Error: Unterminated string.\n", lineNumber+1)
 				continue
