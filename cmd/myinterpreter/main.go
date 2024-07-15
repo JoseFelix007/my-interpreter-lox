@@ -159,6 +159,7 @@ func main() {
 				}
 			}
 			if literal != "" {
+				errors = true
 				fmt.Fprintf(os.Stderr, "[line %d] Error: Unterminated string.\n", lineNumber+1)
 				continue
 			}
