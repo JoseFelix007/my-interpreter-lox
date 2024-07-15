@@ -106,6 +106,9 @@ func main() {
 					fmt.Printf("%s %s null\n", lexema, chr)
 				}
 			}
+			if last_transition.Lexema != "" {
+				fmt.Printf("%s %c null\n", last_transition.Lexema, last_chr)
+			}
 		}
 	}
 
