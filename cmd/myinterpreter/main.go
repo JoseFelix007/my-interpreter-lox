@@ -86,6 +86,9 @@ func main() {
 				if !ok {
 					errors = true
 					fmt.Fprintf(os.Stderr, "[line %d] Error: Unexpected character: %c\n", lineNumber+1, rune(curr_chr))
+					last_transition = Transition{"", NORMAL}
+					last_chr = rune(0)
+					state = NORMAL
 					continue
 				}
 
