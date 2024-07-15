@@ -98,6 +98,9 @@ func main() {
 
 				if state == NORMAL {
 					chr := string(last_chr) + string(curr_chr)
+					if last_chr == rune(0) {
+						chr = string(curr_chr)
+					}
 					lexema := ""
 					if last_transition.Lexema != "" {
 						lexema = last_transition.Lexema + "_"
