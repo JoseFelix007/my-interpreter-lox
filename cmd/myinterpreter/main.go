@@ -14,8 +14,9 @@ type Transition struct {
 
 const (
 	NORMAL State = iota
-	WAITING
+	WAITING_EQUAL
 	WAITING_COMMENT
+	WAITING_STRING
 	IGNORE
 	BREAK
 )
@@ -33,19 +34,23 @@ func getTransitions() map[State]map[rune]Transition {
 			';':  {"SEMICOLON", NORMAL},
 			'+':  {"PLUS", NORMAL},
 			'-':  {"MINUS", NORMAL},
-			'=':  {"EQUAL", WAITING},
-			'<':  {"LESS", WAITING},
-			'>':  {"GREATER", WAITING},
-			'!':  {"BANG", WAITING},
+			'=':  {"EQUAL", WAITING_EQUAL},
+			'<':  {"LESS", WAITING_EQUAL},
+			'>':  {"GREATER", WAITING_EQUAL},
+			'!':  {"BANG", WAITING_EQUAL},
 			'/':  {"SLASH", WAITING_COMMENT},
 			' ':  {"SPACE", IGNORE},
 			'\t': {"TAB", IGNORE},
+			'"':  {"QUOTATION_MARK", WAITING_STRING},
 		},
-		WAITING: {
+		WAITING_EQUAL: {
 			'=': {"EQUAL", NORMAL},
 		},
 		WAITING_COMMENT: {
 			'/': {"COMMENT", BREAK},
+		},
+		WAITING_STRING: {
+			'"': {"STRING", NORMAL},
 		},
 	}
 }
@@ -83,8 +88,14 @@ func main() {
 			state := NORMAL
 			last_transition := Transition{"", NORMAL}
 			last_chr := rune(0)
+			literal := ""
 			for _, curr_chr := range line {
 				transition, ok := transitions[state][curr_chr]
+				if !ok && state == WAITING_STRING {
+					literal += string(curr_chr)
+					continue
+				}
+
 				if !ok && state != NORMAL {
 					fmt.Printf("%s %c null\n", last_transition.Lexema, last_chr)
 					last_transition = Transition{"", NORMAL}
@@ -132,12 +143,21 @@ func main() {
 					if last_transition.Lexema != "" {
 						lexema = last_transition.Lexema + "_"
 					}
+					if literal != "" {
+						lexema = ""
+						chr = literal
+					}
 					lexema = lexema + transition.Lexema
 					fmt.Printf("%s %s null\n", lexema, chr)
 					last_transition = Transition{"", NORMAL}
 					last_chr = rune(0)
 					state = NORMAL
+					literal = ""
 				}
+			}
+			if literal != "" {
+				fmt.Fprintf(os.Stderr, "[line %d] Error: Unterminated string.\n", lineNumber+1)
+				continue
 			}
 			if last_transition.Lexema != "" {
 				fmt.Printf("%s %c null\n", last_transition.Lexema, last_chr)
