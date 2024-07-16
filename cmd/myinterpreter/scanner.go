@@ -209,12 +209,13 @@ func (s *Scanner) scanNumber() {
 	}
 
 	line := s.lines[s.cursorLine]
-	literalFloat, err := strconv.ParseFloat(line[s.prevCursorChar:s.cursorChar], 64)
+	lexema := line[s.prevCursorChar:s.cursorChar]
+	literalFloat, err := strconv.ParseFloat(lexema, 64)
 	if err != nil {
 		s.addError(s.cursorLine, "Invalid number format", "")
 	} else {
 		literal := strconv.FormatFloat(literalFloat, 'f', endDigits, 64)
-		s.addToken(literal, literal, s.prevCursorChar, s.cursorLine, NUMBER)
+		s.addToken(lexema, literal, s.prevCursorChar, s.cursorLine, NUMBER)
 	}
 }
 
