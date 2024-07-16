@@ -190,7 +190,7 @@ func (s *Scanner) scanNumber() {
 	if s.peek() == '.' {
 		s.read()
 		if !unicode.IsDigit(s.peek()) {
-			s.addToken(string('.'), string('.'), s.prevCursorChar, s.cursorLine, DOT)
+			s.addToken(string('.'), "", s.prevCursorChar, s.cursorLine, DOT)
 			return
 		}
 		for unicode.IsDigit(s.peek()) {
@@ -198,7 +198,7 @@ func (s *Scanner) scanNumber() {
 		}
 	}
 	if !hasStartDigits {
-		s.addToken(string('.'), string('.'), s.prevCursorChar, s.cursorLine, DOT)
+		s.addToken(string('.'), "", s.prevCursorChar, s.cursorLine, DOT)
 		s.prevCursorChar++
 	}
 
