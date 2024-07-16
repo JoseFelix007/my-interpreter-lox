@@ -232,8 +232,9 @@ func (s *Scanner) scanString() {
 	if ok {
 		s.read()
 		line := s.lines[s.cursorLine]
-		literal := line[s.prevCursorChar:s.cursorChar]
-		s.addToken(literal, literal, s.prevCursorChar, s.cursorLine, STRING)
+		lexema := line[s.prevCursorChar:s.cursorChar]
+		literal := line[s.prevCursorChar+1 : s.cursorChar-1]
+		s.addToken(lexema, literal, s.prevCursorChar, s.cursorLine, STRING)
 	}
 }
 
