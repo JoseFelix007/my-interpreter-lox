@@ -183,23 +183,29 @@ func (s *Scanner) isWaiting() bool {
 
 func (s *Scanner) scanNumber() {
 	hasStartDigits := false
+	hasEndDigits := false
 	for unicode.IsDigit(s.peek()) {
 		hasStartDigits = true
 		s.read()
 	}
 	if s.peek() == '.' {
 		s.read()
-		if !unicode.IsDigit(s.peek()) {
+		if !hasStartDigits {
 			s.addToken(string('.'), "", s.prevCursorChar, s.cursorLine, DOT)
 			return
 		}
+		if hasStartDigits && !unicode.IsDigit(s.peek()) {
+			s.cursorChar--
+		}
 		for unicode.IsDigit(s.peek()) {
+			hasEndDigits = true
 			s.read()
 		}
 	}
-	if !hasStartDigits {
-		s.addToken(string('.'), "", s.prevCursorChar, s.cursorLine, DOT)
-		s.prevCursorChar++
+
+	endDigits := -1
+	if !hasEndDigits {
+		endDigits = 1
 	}
 
 	line := s.lines[s.cursorLine]
@@ -207,7 +213,7 @@ func (s *Scanner) scanNumber() {
 	if err != nil {
 		s.addError(s.cursorLine, "Invalid number format", "")
 	} else {
-		literal := strconv.FormatFloat(literalFloat, 'f', -1, 64)
+		literal := strconv.FormatFloat(literalFloat, 'f', endDigits, 64)
 		s.addToken(literal, literal, s.prevCursorChar, s.cursorLine, NUMBER)
 	}
 }
