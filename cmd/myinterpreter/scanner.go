@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -21,13 +22,16 @@ type ScanError struct {
 	Value   string
 }
 type Scanner struct {
+	tokens       []Token
+	errors       []ScanError
+	transitions  map[State]map[rune]Transition
+	currentState State
+
 	fileContents   []byte
-	tokens         []Token
-	errors         []ScanError
-	transitions    map[State]map[rune]Transition
-	currentState   State
-	lastTransition Transition
-	literal        string
+	lines          []string
+	prevCursorChar int
+	cursorChar     int
+	cursorLine     int
 }
 type State int
 type Transition struct {
@@ -115,11 +119,14 @@ func getTransitions() map[State]map[rune]Transition {
 
 func NewScanner(fileContents []byte) *Scanner {
 	return &Scanner{
+		currentState: NORMAL,
+		transitions:  getTransitions(),
+
 		fileContents:   fileContents,
-		currentState:   NORMAL,
-		lastTransition: Transition{rune(0), "", NORMAL},
-		literal:        "",
-		transitions:    getTransitions(),
+		lines:          strings.Split(string(fileContents), "\n"),
+		prevCursorChar: 0,
+		cursorChar:     0,
+		cursorLine:     0,
 	}
 }
 
@@ -140,16 +147,101 @@ func (s *Scanner) addError(line int, message, value string) {
 
 func (s *Scanner) printError(err ScanError) {
 	if err.Value != "" {
-		fmt.Fprintf(os.Stderr, "[line %d] Error: %s: %s\n", err.Line, err.Message, err.Value)
+		fmt.Fprintf(os.Stderr, "[line %d] Error: %s: %s\n", err.Line+1, err.Message, err.Value)
 	} else {
-		fmt.Fprintf(os.Stderr, "[line %d] Error: %s.\n", err.Line, err.Message)
+		fmt.Fprintf(os.Stderr, "[line %d] Error: %s.\n", err.Line+1, err.Message)
 	}
 }
 
-func (s *Scanner) clearScanValues() {
+func (s *Scanner) read() rune {
+	if s.isEOL() {
+		return rune(0)
+	}
+	chr := s.lines[s.cursorLine][s.cursorChar]
+	s.cursorChar++
+	return rune(chr)
+}
+
+func (s *Scanner) peek() rune {
+	if s.isEOL() {
+		return rune(0)
+	}
+	chr := s.lines[s.cursorLine][s.cursorChar]
+	return rune(chr)
+}
+
+func (s *Scanner) isEOL() bool {
+	return s.cursorChar >= len(s.lines[s.cursorLine])
+}
+
+func (s *Scanner) isWaiting() bool {
+	return s.currentState == WAITING_STRING ||
+		s.currentState == WAITING_EQUAL ||
+		s.currentState == WAITING_COMMENT ||
+		s.currentState == WAITING_NUMBER
+}
+
+func (s *Scanner) scanNumber() {
+	for unicode.IsDigit(s.peek()) {
+		s.read()
+	}
+	if s.peek() == '.' {
+		s.read()
+		if !unicode.IsDigit(s.peek()) {
+			s.addToken(string('.'), string('.'), s.prevCursorChar, s.cursorLine, DOT)
+			return
+		}
+		for unicode.IsDigit(s.peek()) {
+			s.read()
+		}
+	}
+
+	line := s.lines[s.cursorLine]
+	literalFloat, err := strconv.ParseFloat(line[s.prevCursorChar:s.cursorChar], 64)
+	if err != nil {
+		s.addError(s.cursorLine, "Invalid number format", "")
+	} else {
+		literal := strconv.FormatFloat(literalFloat, 'f', -1, 64)
+		s.addToken(literal, literal, s.prevCursorChar, s.cursorLine, NUMBER)
+	}
+}
+
+func (s *Scanner) scanString() {
+	transition, ok := s.transitions[s.currentState][s.peek()]
+	for !s.isEOL() && !ok {
+		s.read()
+		s.currentState = transition.State
+		transition, ok = s.transitions[s.currentState][s.peek()]
+	}
+	if s.isEOL() && !ok {
+		s.addError(s.cursorLine, "Unterminated string", "")
+	}
+	if ok {
+		s.read()
+		line := s.lines[s.cursorLine]
+		literal := line[s.prevCursorChar:s.cursorChar]
+		s.addToken(literal, literal, s.prevCursorChar, s.cursorLine, STRING)
+	}
+}
+
+func (s *Scanner) scanToken(initialTransition Transition) {
+	tokenType := initialTransition.Type
+	s.prevCursorChar = s.cursorChar - 1
+	for s.isWaiting() {
+		nextTransition, ok := s.transitions[s.currentState][s.peek()]
+		if !ok {
+			break
+		}
+
+		s.read()
+		s.currentState = nextTransition.State
+		tokenType += "_" + nextTransition.Type
+	}
+
+	line := s.lines[s.cursorLine]
+	literal := line[s.prevCursorChar:s.cursorChar]
+	s.addToken(literal, "", s.prevCursorChar, s.cursorLine, tokenType)
 	s.currentState = NORMAL
-	s.lastTransition = Transition{rune(0), "", NORMAL}
-	s.literal = ""
 }
 
 func (s *Scanner) scanTokens() error {
@@ -157,99 +249,56 @@ func (s *Scanner) scanTokens() error {
 		return nil
 	}
 
-	lines := strings.Split(string(s.fileContents), "\n")
-	for lineNumber, line := range lines {
-		s.clearScanValues()
-		for i, currentChar := range line {
-			transition, ok := s.transitions[s.currentState][currentChar]
-			if !ok && s.currentState == WAITING_STRING {
-				s.literal += string(currentChar)
+	for lineIdx, line := range s.lines {
+		s.cursorChar = 0
+		s.cursorLine = lineIdx
+
+		s.currentState = NORMAL
+		s.prevCursorChar = s.cursorChar
+		for s.cursorChar < len(line) {
+			if s.currentState == WAITING_STRING {
+				s.prevCursorChar = s.cursorChar - 1
+				s.scanString()
 				continue
 			}
 
-			if s.currentState == WAITING_NUMBER {
-				if unicode.IsDigit(currentChar) || currentChar == '.' {
-					s.literal += string(currentChar)
-					continue
-				}
-				if s.literal != "" {
-					if strings.Count(s.literal, ".") > 1 {
-						s.addError(lineNumber+1, "Invalid number format", s.literal)
-					} else {
-						s.addToken(s.literal, s.literal, i, lineNumber+1, NUMBER)
-					}
-					s.clearScanValues()
-				}
-				transition, ok = s.transitions[NORMAL][currentChar]
+			if unicode.IsDigit(s.peek()) || s.peek() == '.' {
+				s.prevCursorChar = s.cursorChar
+				s.scanNumber()
+				continue
 			}
 
-			if !ok && s.currentState != NORMAL {
-				s.addToken(string(s.lastTransition.Char), "", i, lineNumber+1, s.lastTransition.Type)
-				s.clearScanValues()
-				transition, ok = s.transitions[NORMAL][currentChar]
-			}
+			chr := s.read()
+			transition, ok := s.transitions[s.currentState][chr]
 
 			if !ok {
-				s.addError(lineNumber+1, "Unexpected character", string(currentChar))
-				s.clearScanValues()
+				s.addError(s.cursorLine, "Unexpected character", string(chr))
+				s.currentState = NORMAL
 				continue
 			}
 
 			s.currentState = transition.State
 			if s.currentState == BREAK {
-				s.clearScanValues()
 				break
 			}
 
 			if s.currentState == IGNORE {
-				s.clearScanValues()
+				s.currentState = NORMAL
 				continue
 			}
 
-			if s.currentState == WAITING_NUMBER {
-				if unicode.IsDigit(currentChar) || currentChar == '.' {
-					s.literal += string(currentChar)
+			if s.currentState == WAITING_STRING {
+				continue
+			}
+
+			if s.currentState == WAITING_COMMENT {
+				_, ok = s.transitions[s.currentState][s.peek()]
+				if ok {
 					continue
 				}
 			}
 
-			if s.currentState != NORMAL {
-				s.lastTransition = transition
-				continue
-			}
-
-			if s.currentState == NORMAL {
-				lexema := string(s.lastTransition.Char) + string(currentChar)
-				if s.lastTransition.Char == rune(0) {
-					lexema = string(currentChar)
-				}
-				tokenType := ""
-				if s.lastTransition.Type != "" {
-					tokenType = s.lastTransition.Type + "_"
-				}
-				if s.lastTransition.State == WAITING_STRING {
-					tokenType = ""
-					lexema = "\"" + s.literal + "\""
-				}
-				tokenType = tokenType + transition.Type
-				s.addToken(lexema, s.literal, i, lineNumber+1, tokenType)
-				s.clearScanValues()
-			}
-		}
-		if s.literal != "" {
-			if s.currentState == WAITING_NUMBER {
-				if strings.Count(s.literal, ".") > 1 {
-					s.addError(lineNumber+1, "Invalid number format", s.literal)
-				} else {
-					s.addToken(s.literal, s.literal, len(line), lineNumber+1, NUMBER)
-				}
-				continue
-			}
-			s.addError(lineNumber+1, "Unterminated string", "")
-			continue
-		}
-		if s.lastTransition.Type != "" {
-			s.addToken(string(s.lastTransition.Char), "", len(line), lineNumber+1, s.lastTransition.Type)
+			s.scanToken(transition)
 		}
 	}
 
