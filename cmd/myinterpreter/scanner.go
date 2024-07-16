@@ -182,7 +182,9 @@ func (s *Scanner) isWaiting() bool {
 }
 
 func (s *Scanner) scanNumber() {
+	hasStartDigits := false
 	for unicode.IsDigit(s.peek()) {
+		hasStartDigits = true
 		s.read()
 	}
 	if s.peek() == '.' {
@@ -194,6 +196,10 @@ func (s *Scanner) scanNumber() {
 		for unicode.IsDigit(s.peek()) {
 			s.read()
 		}
+	}
+	if !hasStartDigits {
+		s.addToken(string('.'), string('.'), s.prevCursorChar, s.cursorLine, DOT)
+		s.prevCursorChar++
 	}
 
 	line := s.lines[s.cursorLine]
