@@ -223,13 +223,13 @@ func (s *Scanner) scanString() {
 	transition, ok := s.transitions[s.currentState][s.peek()]
 	for !s.isEOL() && !ok {
 		s.read()
-		s.currentState = transition.State
 		transition, ok = s.transitions[s.currentState][s.peek()]
 	}
 	if s.isEOL() && !ok {
 		s.addError(s.cursorLine, "Unterminated string", "")
 	}
 	if ok {
+		s.currentState = transition.State
 		s.read()
 		line := s.lines[s.cursorLine]
 		lexema := line[s.prevCursorChar:s.cursorChar]
