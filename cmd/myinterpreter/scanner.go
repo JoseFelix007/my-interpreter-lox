@@ -71,6 +71,7 @@ const (
 	COMMENT        = "COMMENT"
 	STRING         = "STRING"
 	NUMBER         = "NUMBER"
+	IDENTIFIER     = "IDENTIFIER"
 )
 
 func getTransitions() map[State]map[rune]Transition {
@@ -258,6 +259,24 @@ func (s *Scanner) scanToken(initialTransition Transition) {
 	s.currentState = NORMAL
 }
 
+func isAlpha(r rune) bool {
+	return unicode.IsLetter(r) || r == '_'
+}
+
+func isAlphaNumeric(r rune) bool {
+	return isAlpha(r) || unicode.IsDigit(r)
+}
+
+func (s *Scanner) scanIdentifier() {
+	for isAlphaNumeric(s.peek()) {
+		s.read()
+	}
+
+	line := s.lines[s.cursorLine]
+	lexema := line[s.prevCursorChar:s.cursorChar]
+	s.addToken(lexema, "", s.prevCursorChar, s.cursorLine, IDENTIFIER)
+}
+
 func (s *Scanner) scanTokens() error {
 	if len(s.fileContents) == 0 {
 		return nil
@@ -279,6 +298,12 @@ func (s *Scanner) scanTokens() error {
 			if unicode.IsDigit(s.peek()) || s.peek() == '.' {
 				s.prevCursorChar = s.cursorChar
 				s.scanNumber()
+				continue
+			}
+
+			if isAlpha(s.peek()) {
+				s.prevCursorChar = s.cursorChar
+				s.scanIdentifier()
 				continue
 			}
 
