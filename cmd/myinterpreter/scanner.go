@@ -25,6 +25,7 @@ type Scanner struct {
 	tokens       []Token
 	errors       []ScanError
 	transitions  map[State]map[rune]Transition
+	keywords     map[string]string
 	currentState State
 
 	fileContents   []byte
@@ -72,6 +73,23 @@ const (
 	STRING         = "STRING"
 	NUMBER         = "NUMBER"
 	IDENTIFIER     = "IDENTIFIER"
+	//KeyWords
+	AND    = "AND"
+	CLASS  = "CLASS"
+	ELSE   = "ELSE"
+	FALSE  = "FALSE"
+	FOR    = "FOR"
+	FUN    = "FUN"
+	IF     = "IF"
+	NIL    = "NIL"
+	OR     = "OR"
+	PRINT  = "PRINT"
+	RETURN = "RETURN"
+	SUPER  = "SUPER"
+	THIS   = "THIS"
+	TRUE   = "TRUE"
+	VAR    = "VAR"
+	WHILE  = "WHILE"
 )
 
 func getTransitions() map[State]map[rune]Transition {
@@ -118,10 +136,32 @@ func getTransitions() map[State]map[rune]Transition {
 	return transitions
 }
 
+func getKeywords() map[string]string {
+	return map[string]string{
+		"and":    AND,
+		"class":  CLASS,
+		"else":   ELSE,
+		"false":  FALSE,
+		"for":    FOR,
+		"fun":    FUN,
+		"if":     IF,
+		"nil":    NIL,
+		"or":     OR,
+		"print":  PRINT,
+		"return": RETURN,
+		"super":  SUPER,
+		"this":   THIS,
+		"true":   TRUE,
+		"var":    VAR,
+		"while":  WHILE,
+	}
+}
+
 func NewScanner(fileContents []byte) *Scanner {
 	return &Scanner{
 		currentState: NORMAL,
 		transitions:  getTransitions(),
+		keywords:     getKeywords(),
 
 		fileContents:   fileContents,
 		lines:          strings.Split(string(fileContents), "\n"),
@@ -273,7 +313,13 @@ func (s *Scanner) scanIdentifier() {
 
 	line := s.lines[s.cursorLine]
 	lexema := line[s.prevCursorChar:s.cursorChar]
-	s.addToken(lexema, "", s.prevCursorChar, s.cursorLine, IDENTIFIER)
+
+	tokenType := IDENTIFIER
+	keyword, exists := s.keywords[lexema]
+	if exists {
+		tokenType = keyword
+	}
+	s.addToken(lexema, "", s.prevCursorChar, s.cursorLine, tokenType)
 }
 
 func (s *Scanner) scanTokens() error {
