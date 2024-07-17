@@ -184,7 +184,7 @@ func (s *Scanner) isWaiting() bool {
 
 func (s *Scanner) scanNumber() {
 	hasStartDigits := false
-	hasEndDigits := false
+	// hasEndDigits := false
 	for unicode.IsDigit(s.peek()) {
 		hasStartDigits = true
 		s.read()
@@ -199,14 +199,9 @@ func (s *Scanner) scanNumber() {
 			s.cursorChar--
 		}
 		for unicode.IsDigit(s.peek()) {
-			hasEndDigits = true
+			// hasEndDigits = true
 			s.read()
 		}
-	}
-
-	endDigits := -1
-	if !hasEndDigits {
-		endDigits = 1
 	}
 
 	line := s.lines[s.cursorLine]
@@ -215,7 +210,11 @@ func (s *Scanner) scanNumber() {
 	if err != nil {
 		s.addError(s.cursorLine, "Invalid number format", "")
 	} else {
-		literal := strconv.FormatFloat(literalFloat, 'f', endDigits, 64)
+		prec := -1
+		if literalFloat == float64(int(literalFloat)) {
+			prec = 1
+		}
+		literal := strconv.FormatFloat(literalFloat, 'f', prec, 64)
 		s.addToken(lexema, literal, s.prevCursorChar, s.cursorLine, NUMBER)
 	}
 }
