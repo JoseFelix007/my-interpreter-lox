@@ -251,7 +251,20 @@ func (p *Parser) comparison() (Expr, bool) {
 }
 
 func (p *Parser) equality() (Expr, bool) {
-	return p.comparison()
+	left, ok := p.comparison()
+
+	for p.matchSome([]string{BANG_EQUAL, EQUAL_EQUAL}) && ok {
+		var right Expr
+		operator := p.previous()
+		right, ok = p.comparison()
+		left = &ExprBinary{
+			Left:  left,
+			Token: &operator,
+			Right: right,
+		}
+	}
+
+	return left, ok
 }
 
 func (p *Parser) expression() (Expr, bool) {
