@@ -73,6 +73,10 @@ const (
 	STRING         = "STRING"
 	NUMBER         = "NUMBER"
 	IDENTIFIER     = "IDENTIFIER"
+	//Multiple
+	LESS_EQUAL    = "LESS_EQUAL"
+	GREATER_EQUAL = "GREATER_EQUAL"
+	EQUAL_EQUAL   = "EQUAL_EQUAL"
 	//KeyWords
 	AND    = "AND"
 	CLASS  = "CLASS"
