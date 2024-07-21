@@ -183,7 +183,7 @@ func (p *Parser) primary() (Expr, bool) {
 			Expr: expr,
 		}, ok
 	}
-	p.error(p.previous(), "Expect expression.")
+	p.error(p.read(), "Expect expression.")
 	return nil, false
 }
 
@@ -286,7 +286,11 @@ func (p *Parser) parse() error {
 }
 
 func (err *ParseError) print() {
-	fmt.Fprintf(os.Stderr, "Error: %s\n", err.message)
+	if err.Token.Type == EOF {
+		fmt.Fprintf(os.Stderr, "[line %d] Error at end: %s\n", err.Token.Line, err.message)
+	} else {
+		fmt.Fprintf(os.Stderr, "[line %d] Error at '%s': %s\n", err.Token.Line, err.Token.Lexema, err.message)
+	}
 }
 
 func (p *Parser) print() {

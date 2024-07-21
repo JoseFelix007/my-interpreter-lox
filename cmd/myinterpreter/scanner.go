@@ -95,6 +95,7 @@ const (
 	TRUE   = "TRUE"
 	VAR    = "VAR"
 	WHILE  = "WHILE"
+	EOF    = "EOF"
 )
 
 func getTransitions() map[State]map[rune]Transition {
@@ -391,6 +392,8 @@ func (s *Scanner) scanTokens() error {
 		}
 	}
 
+	s.addToken("", "", 0, s.cursorLine+1, EOF)
+
 	if len(s.errors) > 0 {
 		return errors.New("")
 	}
@@ -404,6 +407,4 @@ func (s *Scanner) printTokens() {
 	for _, token := range s.tokens {
 		s.printToken(token)
 	}
-
-	fmt.Println("EOF  null")
 }
