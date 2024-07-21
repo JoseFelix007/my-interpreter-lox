@@ -32,9 +32,12 @@ func (lox *Interpreter) parse() error {
 	var err error
 	if lox.scanner == nil {
 		err = lox.tokenize()
+		if err != nil {
+			return err
+		}
 	}
 	lox.parser = NewParser()
 	lox.parser.Tokens = lox.scanner.tokens
-	lox.parser.parse()
+	err = lox.parser.parse()
 	return err
 }

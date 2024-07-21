@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"os"
+)
 
 // import (
 // 	"errors"
@@ -11,10 +15,16 @@ import "fmt"
 // 	"unicode"
 // )
 
+type ParseError struct {
+	Token   Token
+	message string
+}
+
 type Parser struct {
 	Tokens []Token
 	Cursor int
 	Exprs  []Expr
+	errors []ParseError
 }
 
 func NewParser() *Parser {
@@ -32,19 +42,23 @@ const (
 )
 
 type Expr interface {
-	print()
+	print() string
 }
 
 type ExprLiteral struct {
 	Value string
 }
 
-func (expr *ExprLiteral) print() {
-	fmt.Printf("%s\n", expr.Value)
+func (expr *ExprLiteral) print() string {
+	return expr.Value
 }
 
 type ExprGroup struct {
 	Expr Expr
+}
+
+func (expr *ExprGroup) print() string {
+	return fmt.Sprintf("(group %s)", expr.Expr.print())
 }
 
 type ExprUnary struct {
@@ -101,6 +115,19 @@ func (p *Parser) matchSome(types []string) bool {
 	return false
 }
 
+func (p *Parser) error(token Token, message string) {
+	p.errors = append(p.errors, ParseError{Token: token, message: message})
+}
+
+func (p *Parser) consume(Type string, message string) error {
+	if p.check(Type) {
+		p.read()
+		return nil
+	}
+	p.error(p.previous(), message)
+	return errors.New("")
+}
+
 func (p *Parser) primary() Expr {
 	if p.match(TRUE) {
 		return &ExprLiteral{
@@ -122,17 +149,67 @@ func (p *Parser) primary() Expr {
 			Value: p.previous().Literal,
 		}
 	}
+	if p.match(LEFT_PAREN) {
+		expr := p.expression()
+		err := p.consume(RIGHT_PAREN, "Unmatched parentheses.")
+		if err != nil {
+			return nil
+		}
+		return &ExprGroup{
+			Expr: expr,
+		}
+	}
 	return nil
 }
 
-func (p *Parser) parse() {
+func (p *Parser) unary() Expr {
+	return p.primary()
+}
+
+func (p *Parser) factor() Expr {
+	return p.unary()
+}
+
+func (p *Parser) term() Expr {
+	return p.factor()
+}
+
+func (p *Parser) comparison() Expr {
+	return p.term()
+}
+
+func (p *Parser) equality() Expr {
+	return p.comparison()
+}
+
+func (p *Parser) expression() Expr {
+	return p.equality()
+}
+
+func (p *Parser) parse() error {
 	for !p.isAtEnd() {
-		p.Exprs = append(p.Exprs, p.primary())
+		expr := p.expression()
+		if expr != nil {
+			p.Exprs = append(p.Exprs, expr)
+		}
 	}
+
+	if len(p.errors) > 0 {
+		return errors.New("")
+	}
+	return nil
+}
+
+func (err *ParseError) print() {
+	fmt.Fprintf(os.Stderr, "Error: %s\n", err.message)
 }
 
 func (p *Parser) print() {
+	for _, err := range p.errors {
+		err.print()
+	}
+
 	for _, expr := range p.Exprs {
-		expr.print()
+		fmt.Printf("%s\n", expr.print())
 	}
 }
