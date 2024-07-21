@@ -330,6 +330,7 @@ func (s *Scanner) scanIdentifier() {
 
 func (s *Scanner) scanTokens() error {
 	if len(s.fileContents) == 0 {
+		s.addToken("", "", 0, 0, EOF)
 		return nil
 	}
 
