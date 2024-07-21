@@ -58,18 +58,28 @@ type ExprGroup struct {
 }
 
 func (expr *ExprGroup) print() string {
-	var group string
 	if expr.Expr == nil {
-		group = ""
+		return ""
 	} else {
-		group = expr.Expr.print()
+		return fmt.Sprintf("(group %s)", expr.Expr.print())
 	}
-	return fmt.Sprintf("(group %s)", group)
 }
 
 type ExprUnary struct {
-	Token Token
+	Token *Token
 	Right Expr
+}
+
+func (expr *ExprUnary) print() string {
+	if expr.Right == nil {
+		return ""
+	} else {
+		token := ""
+		if expr.Token != nil {
+			token = expr.Token.Lexema
+		}
+		return fmt.Sprintf("(%s %s)", token, expr.Right.print())
+	}
 }
 
 type ExprBinary struct {
@@ -170,6 +180,14 @@ func (p *Parser) primary() (Expr, bool) {
 }
 
 func (p *Parser) unary() (Expr, bool) {
+	if p.matchSome([]string{BANG, MINUS}) {
+		operator := p.previous()
+		right, ok := p.unary()
+		return &ExprUnary{
+			Token: &operator,
+			Right: right,
+		}, ok
+	}
 	return p.primary()
 }
 
