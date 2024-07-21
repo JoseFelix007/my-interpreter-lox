@@ -165,6 +165,7 @@ func (p *Parser) primary() Expr {
 			Expr: expr,
 		}
 	}
+	p.error(p.previous(), "Expect expression.")
 	return nil
 }
 
