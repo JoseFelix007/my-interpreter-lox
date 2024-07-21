@@ -134,69 +134,69 @@ func (p *Parser) consume(Type string, message string) error {
 	return errors.New("")
 }
 
-func (p *Parser) primary() Expr {
+func (p *Parser) primary() (Expr, bool) {
 	if p.match(TRUE) {
 		return &ExprLiteral{
 			Value: "true",
-		}
+		}, true
 	}
 	if p.match(FALSE) {
 		return &ExprLiteral{
 			Value: "false",
-		}
+		}, true
 	}
 	if p.match(NIL) {
 		return &ExprLiteral{
 			Value: "nil",
-		}
+		}, true
 	}
 	if p.matchSome([]string{NUMBER, STRING}) {
 		return &ExprLiteral{
 			Value: p.previous().Literal,
-		}
+		}, true
 	}
 	if p.match(LEFT_PAREN) {
-		expr := p.expression()
+		expr, ok := p.expression()
 		err := p.consume(RIGHT_PAREN, "Unmatched parentheses.")
 		if err != nil {
-			return nil
+			return nil, false
 		}
 		return &ExprGroup{
 			Expr: expr,
-		}
+		}, ok
 	}
 	p.error(p.previous(), "Expect expression.")
-	return nil
+	return nil, false
 }
 
-func (p *Parser) unary() Expr {
+func (p *Parser) unary() (Expr, bool) {
 	return p.primary()
 }
 
-func (p *Parser) factor() Expr {
+func (p *Parser) factor() (Expr, bool) {
 	return p.unary()
 }
 
-func (p *Parser) term() Expr {
+func (p *Parser) term() (Expr, bool) {
 	return p.factor()
 }
 
-func (p *Parser) comparison() Expr {
+func (p *Parser) comparison() (Expr, bool) {
 	return p.term()
 }
 
-func (p *Parser) equality() Expr {
+func (p *Parser) equality() (Expr, bool) {
 	return p.comparison()
 }
 
-func (p *Parser) expression() Expr {
+func (p *Parser) expression() (Expr, bool) {
 	return p.equality()
 }
 
 func (p *Parser) parse() error {
 	for !p.isAtEnd() {
-		expr := p.expression()
-		if expr != nil {
+		expr, ok := p.expression()
+		if ok {
 			p.Exprs = append(p.Exprs, expr)
 		}
 	}
