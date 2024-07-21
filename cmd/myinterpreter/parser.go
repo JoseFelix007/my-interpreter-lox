@@ -84,8 +84,16 @@ func (expr *ExprUnary) print() string {
 
 type ExprBinary struct {
 	Left  Expr
-	Token Token
+	Token *Token
 	Right Expr
+}
+
+func (expr *ExprBinary) print() string {
+	if expr.Left == nil || expr.Right == nil || expr.Token == nil {
+		return ""
+	} else {
+		return fmt.Sprintf("(%s %s %s)", expr.Token.Lexema, expr.Left.print(), expr.Right.print())
+	}
 }
 
 func (p *Parser) isAtEnd() bool {
@@ -192,7 +200,20 @@ func (p *Parser) unary() (Expr, bool) {
 }
 
 func (p *Parser) factor() (Expr, bool) {
-	return p.unary()
+	left, ok := p.unary()
+
+	for p.matchSome([]string{SLASH, STAR}) && ok {
+		var right Expr
+		operator := p.previous()
+		right, ok = p.unary()
+		left = &ExprBinary{
+			Left:  left,
+			Token: &operator,
+			Right: right,
+		}
+	}
+
+	return left, ok
 }
 
 func (p *Parser) term() (Expr, bool) {
