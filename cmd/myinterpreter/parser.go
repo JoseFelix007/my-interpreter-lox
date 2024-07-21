@@ -92,7 +92,7 @@ func (p *Parser) match(Type string) bool {
 	return false
 }
 
-func (p *Parser) matchMany(types []string) bool {
+func (p *Parser) matchSome(types []string) bool {
 	for _, Type := range types {
 		if p.match(Type) {
 			return true
@@ -115,6 +115,11 @@ func (p *Parser) primary() Expr {
 	if p.match(NIL) {
 		return &ExprLiteral{
 			Value: "nil",
+		}
+	}
+	if p.matchSome([]string{NUMBER, STRING}) {
+		return &ExprLiteral{
+			Value: p.previous().Literal,
 		}
 	}
 	return nil
