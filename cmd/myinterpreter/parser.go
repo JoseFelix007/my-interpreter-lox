@@ -217,7 +217,20 @@ func (p *Parser) factor() (Expr, bool) {
 }
 
 func (p *Parser) term() (Expr, bool) {
-	return p.factor()
+	left, ok := p.factor()
+
+	for p.matchSome([]string{MINUS, PLUS}) && ok {
+		var right Expr
+		operator := p.previous()
+		right, ok = p.factor()
+		left = &ExprBinary{
+			Left:  left,
+			Token: &operator,
+			Right: right,
+		}
+	}
+
+	return left, ok
 }
 
 func (p *Parser) comparison() (Expr, bool) {
