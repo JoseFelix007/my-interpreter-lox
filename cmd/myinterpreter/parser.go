@@ -97,7 +97,7 @@ func (expr *ExprBinary) print() string {
 }
 
 func (p *Parser) isAtEnd() bool {
-	return p.Cursor >= len(p.Tokens)
+	return p.peek().Type == EOF
 }
 
 func (p *Parser) read() Token {
