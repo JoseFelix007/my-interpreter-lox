@@ -58,7 +58,13 @@ type ExprGroup struct {
 }
 
 func (expr *ExprGroup) print() string {
-	return fmt.Sprintf("(group %s)", expr.Expr.print())
+	var group string
+	if expr.Expr == nil {
+		group = ""
+	} else {
+		group = expr.Expr.print()
+	}
+	return fmt.Sprintf("(group %s)", group)
 }
 
 type ExprUnary struct {
