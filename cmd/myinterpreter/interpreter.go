@@ -6,6 +6,7 @@ import (
 
 type Interpreter struct {
 	fileContents []byte
+	tokens       []Token
 	scanner      *Scanner
 	parser       *Parser
 }
@@ -23,21 +24,21 @@ func (lox *Interpreter) readFile(filename string) error {
 	return nil
 }
 
-func (lox *Interpreter) tokenize() error {
+func (lox *Interpreter) tokenize() bool {
 	lox.scanner = NewScanner(lox.fileContents)
-	return lox.scanner.scanTokens()
+	tokens, ok := lox.scanner.scanTokens()
+	lox.tokens = tokens
+	return ok
 }
 
-func (lox *Interpreter) parse() error {
-	var err error
+func (lox *Interpreter) parse() bool {
 	if lox.scanner == nil {
-		err = lox.tokenize()
+		ok := lox.tokenize()
 		lox.parser = NewParser()
-		if err != nil {
-			return err
+		if !ok {
+			return false
 		}
 	}
-	lox.parser.Tokens = lox.scanner.tokens
-	err = lox.parser.parse()
-	return err
+	lox.parser.Tokens = lox.tokens
+	return lox.parser.parse()
 }

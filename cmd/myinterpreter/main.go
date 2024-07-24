@@ -5,18 +5,18 @@ import (
 	"os"
 )
 
-type CommandFunc func(*Interpreter) error
+type CommandFunc func(*Interpreter) bool
 
 var commands = map[string]CommandFunc{
-	"tokenize": func(lox *Interpreter) error {
-		err := lox.tokenize()
+	"tokenize": func(lox *Interpreter) bool {
+		ok := lox.tokenize()
 		lox.scanner.printTokens()
-		return err
+		return ok
 	},
-	"parse": func(lox *Interpreter) error {
-		err := lox.parse()
+	"parse": func(lox *Interpreter) bool {
+		ok := lox.parse()
 		lox.parser.print()
-		return err
+		return ok
 	},
 }
 
@@ -49,8 +49,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = commandFunc(lox)
-	if err != nil {
+	ok = commandFunc(lox)
+	if !ok {
 		os.Exit(65)
 	}
 }

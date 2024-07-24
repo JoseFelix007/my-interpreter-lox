@@ -6,15 +6,6 @@ import (
 	"os"
 )
 
-// import (
-// 	"errors"
-// 	"fmt"
-// 	"os"
-// 	"strconv"
-// 	"strings"
-// 	"unicode"
-// )
-
 type ParseError struct {
 	Token   Token
 	message string
@@ -271,7 +262,7 @@ func (p *Parser) expression() (Expr, bool) {
 	return p.equality()
 }
 
-func (p *Parser) parse() error {
+func (p *Parser) parse() bool {
 	for !p.isAtEnd() {
 		expr, ok := p.expression()
 		if ok {
@@ -279,10 +270,7 @@ func (p *Parser) parse() error {
 		}
 	}
 
-	if len(p.errors) > 0 {
-		return errors.New("")
-	}
-	return nil
+	return len(p.errors) <= 0
 }
 
 func (err *ParseError) print() {
