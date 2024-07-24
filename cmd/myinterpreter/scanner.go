@@ -214,7 +214,7 @@ func (s *Scanner) scanToken() {
 	switch chr {
 	case '/':
 		if s.match('/') {
-			for s.peek() != '\n' && s.isAtEnd() {
+			for s.peek() != '\n' && !s.isAtEnd() {
 				s.read()
 			}
 		} else {
