@@ -22,71 +22,6 @@ func NewParser() *Parser {
 	return &Parser{}
 }
 
-const (
-	EXPRESSION = "EXPRESSION"
-	EQUALITY   = "EQUALITY"
-	COMPARISON = "COMPARISON"
-	TERM       = "TERM"
-	FACTOR     = "FACTOR"
-	UNARY      = "UNARY"
-	PRIMARY    = "PRIMARY"
-)
-
-type Expr interface {
-	print() string
-}
-
-type ExprLiteral struct {
-	Value string
-}
-
-func (expr *ExprLiteral) print() string {
-	return expr.Value
-}
-
-type ExprGroup struct {
-	Expr Expr
-}
-
-func (expr *ExprGroup) print() string {
-	if expr.Expr == nil {
-		return ""
-	} else {
-		return fmt.Sprintf("(group %s)", expr.Expr.print())
-	}
-}
-
-type ExprUnary struct {
-	Token *Token
-	Right Expr
-}
-
-func (expr *ExprUnary) print() string {
-	if expr.Right == nil {
-		return ""
-	} else {
-		token := ""
-		if expr.Token != nil {
-			token = expr.Token.Lexema
-		}
-		return fmt.Sprintf("(%s %s)", token, expr.Right.print())
-	}
-}
-
-type ExprBinary struct {
-	Left  Expr
-	Token *Token
-	Right Expr
-}
-
-func (expr *ExprBinary) print() string {
-	if expr.Left == nil || expr.Right == nil || expr.Token == nil {
-		return ""
-	} else {
-		return fmt.Sprintf("(%s %s %s)", expr.Token.Lexema, expr.Left.print(), expr.Right.print())
-	}
-}
-
 func (p *Parser) isAtEnd() bool {
 	return p.peek().Type == EOF
 }
@@ -262,22 +197,21 @@ func (p *Parser) expression() (Expr, bool) {
 	return p.equality()
 }
 
-func (p *Parser) parse() bool {
+func (p *Parser) parse() ([]Expr, bool) {
 	for !p.isAtEnd() {
-		expr, ok := p.expression()
-		if ok {
+		if expr, ok := p.expression(); ok {
 			p.Exprs = append(p.Exprs, expr)
 		}
 	}
 
-	return len(p.errors) <= 0
+	return p.Exprs, len(p.errors) <= 0
 }
 
 func (err *ParseError) print() {
 	if err.Token.Type == EOF {
-		fmt.Fprintf(os.Stderr, "[line %d] Error at end: %s\n", err.Token.Line, err.message)
+		fmt.Fprintf(os.Stderr, "[line %d] Error at end: %s\n", err.Token.Line+1, err.message)
 	} else {
-		fmt.Fprintf(os.Stderr, "[line %d] Error at '%s': %s\n", err.Token.Line, err.Token.Lexema, err.message)
+		fmt.Fprintf(os.Stderr, "[line %d] Error at '%s': %s\n", err.Token.Line+1, err.Token.Lexema, err.message)
 	}
 }
 
@@ -287,6 +221,6 @@ func (p *Parser) print() {
 	}
 
 	for _, expr := range p.Exprs {
-		fmt.Printf("%s\n", expr.print())
+		fmt.Printf("%s\n", expr.toString())
 	}
 }

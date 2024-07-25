@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"os"
 )
 
 type Interpreter struct {
 	fileContents []byte
 	tokens       []Token
+	exprs        []Expr
 	scanner      *Scanner
 	parser       *Parser
 }
@@ -40,5 +42,20 @@ func (lox *Interpreter) parse() bool {
 		}
 	}
 	lox.parser.Tokens = lox.tokens
-	return lox.parser.parse()
+	exprs, ok := lox.parser.parse()
+	lox.exprs = exprs
+	return ok
+}
+
+func (lox *Interpreter) evaluate() bool {
+	if lox.parser == nil {
+		if ok := lox.parse(); !ok {
+			return false
+		}
+	}
+	for _, expr := range lox.exprs {
+		result := expr.evaluate()
+		fmt.Printf("%s\n", result)
+	}
+	return true
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"unicode"
 )
 
@@ -123,16 +122,11 @@ func (s *Scanner) scanNumber() {
 	}
 
 	literal := string(s.fileContents[s.start:s.current])
-	literalFloat, err := strconv.ParseFloat(literal, 64)
-	if err != nil {
+	literalNumber, ok := parseToNumber(literal)
+	if !ok {
 		s.addError("Invalid number format", "")
 	} else {
-		prec := -1
-		if literalFloat == float64(int(literalFloat)) {
-			prec = 1
-		}
-		literal := strconv.FormatFloat(literalFloat, 'f', prec, 64)
-		s.addTokenWithLiteral(NUMBER, literal)
+		s.addTokenWithLiteral(NUMBER, parseToString(literalNumber))
 	}
 }
 

@@ -18,6 +18,9 @@ var commands = map[string]CommandFunc{
 		lox.parser.print()
 		return ok
 	},
+	"evaluate": func(lox *Interpreter) bool {
+		return lox.evaluate()
+	},
 }
 
 func main() {
@@ -31,7 +34,7 @@ func main() {
 
 	command := os.Args[1]
 
-	if command != "tokenize" && command != "parse" {
+	if command != "tokenize" && command != "parse" && command != "evaluate" {
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
 	}
